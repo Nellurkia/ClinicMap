@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>愿意为血友病患者注射的诊所或医院</title>
+    <style>
+        #mapContainer { width: 70%; height: 600px; float: left; }
+        #distanceList { width: 28%; height: 600px; float: left; overflow-y: auto; padding: 10px; border-left: 2px solid #000; }
+        #distanceList h2 { font-size: 18px; margin: 10px 0; }
+        #distanceList ul { list-style-type: none; padding: 0; }
+        #distanceList li { margin-bottom: 10px; }
+        #citySelector { margin: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 城市选择器 -->
+    <div id="citySelector">
+        <label for="city">选择您的省市：</label>
+        <select id="city" onchange="changeCity()">
+            <option value="南昌市">江西省南昌市</option>
+            <option value="九江市">江西省九江市</option>
+            <option value="新余市">江西省新余市</option>
+            <option value="丰城市">江西省丰城市</option>
+            <option value="抚州市">江西省抚州市</option>
+            <option value="赣州市">江西省赣州市</option>
+            <option value="宜春市">江西省宜春市</option>
+            <option value="鹰潭市">江西省鹰潭市</option>
+            <option value="上饶市">江西省上饶市</option>
+            <option value="吉安市">江西省吉安市</option>
+            <option value="萍乡市">江西省萍乡市</option>
+            <option value="景德镇市">江西省景德镇市</option>
+            <option value="东台市">江苏省东台市</option>
+            <option value="盐城市">江苏省盐城市</option>
+            <option value="常州市">江苏省常州市</option>
+            <option value="淮安市">江苏省淮安市</option>
+            <option value="宁德市">福建省宁德市</option>
+            <option value="龙岩市">福建省龙岩市</option>
+            <option value="东莞市">广东省东莞市</option>
+            <option value="杭州市">浙江省杭州市</option>
+            <option value="湖州市">浙江省湖州市</option>
+            <option value="东营市">山东省东营市</option>
+            <option value="临沂市">山东省临沂市</option>
+            <option value="淄博市">山东省淄博市</option>
+            <option value="淄博市">山东省菏泽市</option>
+            <option value="唐山市">河北省唐山市</option>
+            <option value="西宁市">青海省西宁市</option>
+            <option value="梅州市">广东省梅州市</option>
+            <option value="广州市">广州市</option>
+            <option value="上海市">上海市</option>
+            <option value="成都市">成都市</option>
+        </select>
+    </div>
+
+    <!-- 地图容器 -->
+    <div id="mapContainer"></div>
+    <!-- 距离列表容器 -->
+    <div id="distanceList">
+        <h2>离您最近的诊所或医院是：</h2>
+        <div id="nearestLocation"></div>
+        <ul id="distanceUl"></ul>
+    </div>
+
+    <!-- 配置高德地图的安全密钥 -->
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: "0854475160df95a7068faef69115f2b4", // 替换成你的安全密钥
+        };
+    </script>
+
+    <!-- 加载高德地图API -->
+    <script
+        type="text/javascript"
+        src="https://webapi.amap.com/maps?v=2.0&key=5b486848a482bd35af8f514b37f161aa"> <!-- 替换成你的key -->
+    </script>
+
+    <script>
+        // 初始化地图
+        var map = new AMap.Map('mapContainer', {
+            zoom: 12
+        });
+
+        // 定义位置：医院列表
+        var locations = [
+            { name: '武汉市同济医院', coords: [114.332, 30.577] },
+            { name: '武汉市协和医院', coords: [114.295, 30.575] },
+            { name: '常州市钟楼区新闸街道社区卫生服务中心（需要出示）', coords: [119.913412, 31.83565] },
+            { name: '新余市渝水区青年路何医师中医诊所（需要出示）', coords: [114.923535, 27.823579] },
+            { name: '河北省唐山市丰南区运河东路东湖诊所(交叉路口的东北位置，兴河家园下的底商)', coords: [118.088869, 39.567739] },
+            { name: '东营市东营区东营市人民医院', coords: [118.588463, 37.454847] },
+
+
+            { name: '武汉市人民医院', coords: [114.287, 30.583] }
+        ];
+
+        // 在地图上显示医院位置和名称
+        function addMarkers() {
+            locations.forEach(function(location) {
+                new AMap.Marker({
+                    position: location.coords,
+                    map: map,
+                    title: location.name
+                });
+
+                new AMap.Text({
+                    text: location.name,
+                    anchor: 'center',
+                    position: location.coords,
+                    map: map
+                });
+            });
+        }
+
+        // 改变城市的中心点
+        function changeCity() {
+            var city = document.getElementById('city').value;
+            map.setCity(city, function() {
+                console.log(city + " 中心已设置");
+            });
+
+            // 清空原有医院标记，并重新初始化
+            map.clearMap();
+            addMarkers();
+        }
+
+        // 计算用户到医院的距离并排序
+        function calculateDistances(userCoords) {
+            var distances = [];
+            locations.forEach(function(location) {
+                var distance = AMap.GeometryUtil.distance(userCoords, location.coords);
+                distances.push({ name: location.name, distance: distance });
+            });
+            distances.sort(function(a, b) {
+                return a.distance - b.distance;
+            });
+            return distances;
+        }
+
+        // 显示计算后的距离
+        function displayDistances(userCoords) {
+            var distances = calculateDistances(userCoords);
+            var nearest = distances[0];
+            document.getElementById('nearestLocation').innerHTML = 
+                '<strong>' + nearest.name + '</strong> (' + (nearest.distance / 1000).toFixed(2) + ' km)';
+            var listHTML = '';
+            distances.forEach(function(item) {
+                listHTML += '<li>' + item.name + ': ' + (item.distance / 1000).toFixed(2) + ' km</li>';
+            });
+            document.getElementById('distanceUl').innerHTML = listHTML;
+        }
+
+        // 获取用户的地理位置
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                var userCoords = [position.coords.longitude, position.coords.latitude];
+                map.setCenter(userCoords); // 更新地图中心到用户位置
+                new AMap.Marker({
+                    position: userCoords,
+                    map: map,
+                    title: '您的位置'
+                });
+                displayDistances(userCoords);
+            },
+            function(error) {
+                console.error("无法获取用户位置: ", error);
+                alert("获取用户位置失败，您可以手动选择城市。");
+            }
+        );
+
+        // 初始化医院标记
+        addMarkers();
+    </script>
+</body>
+</html>
