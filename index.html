@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>愿意为血友病患者注射的诊所或医院</title>
+    <style>
+        #mapContainer { width: 70%; height: 600px; float: left; }
+        #distanceList { width: 28%; height: 600px; float: left; overflow-y: auto; padding: 10px; border-left: 2px solid #000; }
+        #distanceList h2 { font-size: 18px; margin: 10px 0; }
+        #distanceList ul { list-style-type: none; padding: 0; }
+        #distanceList li { margin-bottom: 10px; }
+        #citySelector { margin: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 城市选择器 -->
+    <div id="citySelector">
+        <label for="city">选择您的省市：</label>
+        <select id="city" onchange="changeCity()">
+            <option value="南昌市">江西省南昌市</option>
+            <option value="九江市">江西省九江市</option>
+            <option value="新余市">江西省新余市</option>
+            <option value="丰城市">江西省丰城市</option>
+            <option value="抚州市">江西省抚州市</option>
+            <option value="赣州市">江西省赣州市</option>
+            <option value="宜春市">江西省宜春市</option>
+            <option value="鹰潭市">江西省鹰潭市</option>
+            <option value="上饶市">江西省上饶市</option>
+            <option value="吉安市">江西省吉安市</option>
+            <option value="萍乡市">江西省萍乡市</option>
+            <option value="高安市">江西省高安市</option>
+            <option value="景德镇市">江西省景德镇市</option>
+            <option value="东台市">江苏省东台市</option>
+            <option value="盐城市">江苏省盐城市</option>
+            <option value="常州市">江苏省常州市</option>
+            <option value="淮安市">江苏省淮安市</option>
+            <option value="宁德市">福建省宁德市</option>
+            <option value="龙岩市">福建省龙岩市</option>
+            <option value="东莞市">广东省东莞市</option>
+            <option value="杭州市">浙江省杭州市</option>
+            <option value="湖州市">浙江省湖州市</option>
+            <option value="东营市">山东省东营市</option>
+            <option value="临沂市">山东省临沂市</option>
+            <option value="淄博市">山东省淄博市</option>
+            <option value="淄博市">山东省菏泽市</option>
+            <option value="唐山市">河北省唐山市</option>
+            <option value="西宁市">青海省西宁市</option>
+            <option value="梅州市">广东省梅州市</option>
+            <option value="广州市">广州市</option>
+            <option value="上海市">上海市</option>
+            <option value="成都市">成都市</option>
+        </select>
+    </div>
+
+    <!-- 地图容器 -->
+    <div id="mapContainer"></div>
+    <!-- 距离列表容器 -->
+    <div id="distanceList">
+        <h2>离您最近的诊所或医院是：</h2>
+        <div id="nearestLocation"></div>
+        <ul id="distanceUl"></ul>
+    </div>
+
+    <!-- 配置高德地图的安全密钥 -->
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: "0854475160df95a7068faef69115f2b4", // 替换成你的安全密钥
+        };
+    </script>
+
+    <!-- 加载高德地图API -->
+    <script
+        type="text/javascript"
+        src="https://webapi.amap.com/maps?v=2.0&key=5b486848a482bd35af8f514b37f161aa"> <!-- 替换成你的key -->
+    </script>
+
+    <script>
+        // 初始化地图
+        var map = new AMap.Map('mapContainer', {
+            zoom: 12
+        });
+
+        // 定义位置：医院列表
+        var locations = [
+            //武汉市
+            { name: '武汉市同济医院', coords: [114.332, 30.577] },
+            { name: '武汉市协和医院', coords: [114.295, 30.575] },
+            //上海市
+            {name:'奉贤区金钱公路4999私人诊所',coords:[121.551003,30.875373]},
+            // 南昌市">江西省南昌市：
+            {name:'南昌市新建区双港地铁站附近楼立新诊所',coords:[115.865367,28.748556]},
+            {name:'南昌市南昌县奥林匹克花园诊所：金沙大道康泰来斜对面',coords:[115.891,28.600058]},
+            {name:'南昌市进贤县温圳镇紫金铺11栋12号章新华中医诊所',coords:[116.371062,29.879577]},
+            {name:'南昌市高新区昌东大道东路邓坊公寓：鱼尾村卫生室',coords:[116.020745,28.721593]},
+            {name:'南昌市进贤县南湾村卫生健康服务室：南湾卫生健康室',coords:[116.132345,28.293671]},
+            {name:'南昌市进贤县温圳镇中心卫生院-发热门诊',coords:[116.091076,28.344573]},
+            {name:'南昌市进贤县文港镇卫生院',coords:[116.121336,28.289126]},
+            {name:'南昌市经开区左华诊所（新建区）',coords:[115.847433,28.740055]},
+            {name:'南昌市南昌县南昌莲塘樊哲保诊所',coords:[115.891,28.600058]},
+            {name:'南昌市青山湖区罗家镇濡溪村三联路口诊所',coords:[116.023137,28.662072]},
+            {name:'南昌市南昌县邓埠西路与芳草路交叉口李丽君诊所',coords:[115.893032,28.590729]},
+            {name:'南昌市南昌县金沙二路2718号幸福时光附近存德诊所',coords:[115.886825,28.589636]},
+            {name:'南昌市青山湖区创新一路南塘村卫生所',coords:[115.998094,28.675277]},
+
+            // 九江市">江西省九江市：
+            {name:'九江市庐山市和公塘村民委员会燕妮健康诊所',coords:[115.980863,29.306313]},
+            {name:'九江市庐山市南阳畈村委会杏林驿站旁边诊所',coords:[115.980863,29.308132]},
+
+            {name:'九江市修水县上杭乡卫生院',coords:[114.460263,29.112008]},
+
+            // 新余市">江西省新余市：
+            {name:'新余市渝水区青年路何医师中医诊所',coords:[114.923535,27.823579]},
+            {name:'新余市渝水区青年路燕子山陈医生诊所',coords:[114.921046,27.818807]},
+            {name:'新余市渝水区仙来西大道951号刘杏芳中医诊所',coords:[115.972043,29.306305]},
+            // 丰城市">江西省丰城市：
+            {name:'丰城市东方红大街136号丰城市中医院',coords:[115.798108,28.204349]},
+            {name:'丰城市拖船中心卫生院',coords:[115.670766,28.15344,]},
+            {name:'丰城市涂雪花卫生室',coords:[115.80655 ,28.165513]},
+            // 抚州市
+            {name:'抚州市金溪县琅琚中心卫生院-预防接种门诊',coords:[116.657027,27.875209]},
+            {name:'抚州市崇仁县相山镇医院',coords:[116.041769,27.557685]},
+            // 赣州市
+            {name:'赣州市瑞金市瑞金市沙洲坝卫生院',coords:[116.010842,25.885378]},
+            {name:'赣州市于都县贡江镇古田村卫生所',coords:[115.432215,25.977863]},
+            {name:'赣州市于都县古田中路古田诊所',coords:[115.434068,25.960068]},
+            {name:'赣州市宁都县东山坝卫生所',coords:[116.068158,26.742502]},
+            {name:'赣州市信丰县虎山乡龙州村卫生院',coords:[115.077669,25.115384]},
+            {name:'赣州市于都县S219(于宁公路)于都人民医院',coords:[115.529774,26.101257]},
+            {name:'赣州市于都人民医院',coords:[116.380707,29.946464]},
+           ,
+            //宜春市">江西省宜春市：
+            {name:'宜春市奉新县赤岸镇卫生院',coords:[115.380557,28.697357]},
+            {name:'宜春市万载县人民医院',coords:[116.340455, 29.736565]},
+            {name:'宜春市万载阳乐大道邓展胜诊所',coords:[114.457251, 28.115994]},
+            //鹰潭市">江西省鹰潭市：
+            {name:'鹰潭市悦澜湾营销部附近吴爱兵诊所',coords:[117.087848 , 28.271888]},
+            //上饶市">江西省上饶市：
+            {name:'上饶市鄱阳县高家岭车廊卫生所',coords:[116.74258,29.166417]},
+            {name:'上饶市广信区上泸镇振兴街132号卫生院',coords:[117.956676,28.224306]},
+            {name:'上饶市玉山县双明镇S202阳明路中心卫生院',coords:[118.285215,28.803729]},
+            {name:'上饶市余干县洪家嘴乡卫生院',coords:[116.669835 ,28.701938]},
+            {name:'上饶市玉山县双明镇桥村私人诊所',coords:[118.190456 , 28.633796]},
+            {name:'上饶市广丰区广丰区中医院',coords:[118.194355 , 28.459012]},
+            {name:'上饶市余干东街与上观路张振邦卫生室',coords:[116.845081 , 29.732694]},
+            {name:'上饶市余干县白马桥乡-江涛诊所',coords:[115.971692, 29.727846]},
+            {name:'上饶市余干县白马桥乡王源村古唐卫生室',coords:[116.760277, 28.58548]},
+            {name:'上饶市余干县石门村卫生服务室-谭海文医生',coords:[116.685131, 28.585478]},
+            {name:'上饶市玉山县冰溪镇卫生院',coords:[118.264297, 28.681422]},
+            {name:'上饶市玉山县怀玉乡中心卫生院',coords:[116.071444, 29.654215]},
+            {name:'上饶市玉山县双明镇老街张传海诊所',coords:[116.348936, 29.739742]},
+            {name:'上饶市玉山县临湖镇卫生院',coords:[117.954503, 28.659141]},
+            
+            //吉安市">江西省吉安市：
+            {name:'吉安市永新县商贸城社区卫生中心',coords:[116.380707,29.946464]},
+            {name:'吉安市永新县湘赣大道，永新县红卫桥卫生诊所',coords:[115.971692,29.727846]},
+            {name:'吉安市永新县319永新国道边仰山村委白门斗组',coords:[114.024129,27.049957]},
+            //萍乡市">江西省萍乡市：
+            {name:'萍乡市安源区安源卫生所',coords:[113.89119,27.612579]},
+            {name:'萍乡市安源区萍乡汉和医院',coords:[113.873339,27.638729]},
+            {name:'萍乡市莲花县神泉中心卫生院-预防接种门诊',coords:[113.919137,27.054518]},
+            {name:'萍乡市上栗县荆坪村荷花池旁李医生',coords:[113.924987 ,27.947665]},
+
+            {name:'萍乡市湘东区湘东镇赣西医院急诊科',coords:[113.747308 , 27.637247]},
+
+            //高安市">江西省高安市：
+            {name:'高安市石脑镇石脑卫生院',coords:[115.305371,28.397493]},
+            {name:'高安市灰埠镇锦江村金家村',coords:[115.23256 ,28.303521]},
+            //景德镇市">江西省景德镇市：
+            {name:'景德镇市第三人民医院',coords:[117.253096,29.305188]},
+            {name:'景德镇市昌江区余端茂卫生室',coords:[117.206896,29.285737]},
+            //东台市">江苏省东台市：
+            //盐城市">江苏省盐城市：
+            {name:'盐城市五烈镇广山村卫生室',coords:[120.176999,32.800147]},
+
+            //常州市">江苏省常州市：
+            {name:'常州市钟楼区新闸街道社区卫生服务中心',coords:[119.913412,31.83565]},
+
+            //淮安市">江苏省淮安市：
+
+            //宁德市">福建省宁德市：
+
+            //龙岩市">福建省龙岩市：
+
+            //东莞市">广东省东莞市：
+
+            //杭州市">浙江省杭州市：
+            {name:'杭州市钱塘区宋都晨光国际小区门口（电话178l6o48352）',coords:[120.385664,30.290726]},
+            {name:'杭州市上城区浙江省中医院：湖滨院区急诊',coords:[120.172308,30.258239]},
+
+            {name:'杭州市西湖区西湖区转塘街道社区卫生服务中心(新院区)',coords:[120.080457,30.160766]},
+
+            //湖州市">浙江省湖州市：
+            {name:'湖州市吴兴区王华西医内科诊所',coords:[120.133526,30.884995]},
+
+            //东营市">山东省东营市：
+            {name:'东营市东营区东营市人民医院',coords:[118.588463,37.454847]},
+            {name:'东营市垦利区富强街-道路',coords:[118.581432,37.454847]},
+            //临沂市">山东省临沂市：
+            {name:'临沂市经开区佃玉综合门诊部（毛屯诊所）',coords:[118.439736,35.048406]},
+            //淄博市">山东省淄博市：
+            {name:'淄博市张店区小庄社区小区内诊所',coords:[118.049615, 36.85915]},
+            //菏泽市">山东省菏泽市：
+
+            //唐山市">河北省唐山市：
+            {name:'唐山市丰南区运河东路东湖诊所',coords:[118.088869,39.567739]},
+
+            //西宁市">青海省西宁市：
+            {name:'西宁市城西民康医院',coords:[101.753534,36.646919]},
+            {name:'西宁市城北区宁张路109号西宁北康医院',coords:[101.762601,36.685418]},
+            //梅州市">广东省梅州市：
+
+
+
+
+
+        ];
+
+        // 在地图上显示医院位置和名称
+        function addMarkers() {
+            locations.forEach(function(location) {
+                new AMap.Marker({
+                    position: location.coords,
+                    map: map,
+                    title: location.name
+                });
+
+                new AMap.Text({
+                    text: location.name,
+                    anchor: 'center',
+                    position: location.coords,
+                    map: map
+                });
+            });
+        }
+
+        // 改变城市的中心点
+        function changeCity() {
+            var city = document.getElementById('city').value;
+            map.setCity(city, function() {
+                console.log(city + " 中心已设置");
+            });
+
+            // 清空原有医院标记，并重新初始化
+            map.clearMap();
+            addMarkers();
+        }
+
+        // 计算用户到医院的距离并排序
+        function calculateDistances(userCoords) {
+            var distances = [];
+            locations.forEach(function(location) {
+                var distance = AMap.GeometryUtil.distance(userCoords, location.coords);
+                distances.push({ name: location.name, distance: distance });
+            });
+            distances.sort(function(a, b) {
+                return a.distance - b.distance;
+            });
+            return distances;
+        }
+
+        // 显示计算后的距离
+        function displayDistances(userCoords) {
+            var distances = calculateDistances(userCoords);
+            var nearest = distances[0];
+            document.getElementById('nearestLocation').innerHTML = 
+                '<strong>' + nearest.name + '</strong> (' + (nearest.distance / 1000).toFixed(2) + ' km)';
+            var listHTML = '';
+            distances.forEach(function(item) {
+                listHTML += '<li>' + item.name + ': ' + (item.distance / 1000).toFixed(2) + ' km</li>';
+            });
+            document.getElementById('distanceUl').innerHTML = listHTML;
+        }
+
+        // 获取用户的地理位置
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                var userCoords = [position.coords.longitude, position.coords.latitude];
+                map.setCenter(userCoords); // 更新地图中心到用户位置
+                new AMap.Marker({
+                    position: userCoords,
+                    map: map,
+                    title: '您的位置'
+                });
+                displayDistances(userCoords);
+            },
+            function(error) {
+                console.error("无法获取用户位置: ", error);
+                alert("获取用户位置失败，您可以手动选择城市。");
+            }
+        );
+
+        // 初始化医院标记
+        addMarkers();
+    </script>
+</body>
+</html>
